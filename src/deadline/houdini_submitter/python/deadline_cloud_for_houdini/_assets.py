@@ -51,39 +51,6 @@ def _houdini_time_vars_to_glob(path: str) -> str:
     return re.sub(time_var_pattern, "*", path)
 
 
-def _get_reference_parm(parm: hou.Parm) -> hou.Parm:
-    """Follows references up the chain until the parameter is not referenced.
-    Returns the highest referenced parameter for the given parameter.
-
-    Note: If multiple parameters are referenced, or the parm expression has
-    additional content, parm.getReferencedParm() will return the current parm
-    """
-    while parm.getReferencedParm() != parm:
-        parm = parm.getReferencedParm()
-    return parm
-
-
-def _get_parm_value_after_reference(parm: hou.Parm, unexpanded: bool = False) -> str:
-    """Get the value of a parm after following any references to the top level parm"""
-    parm_ref = _get_reference_parm(parm)
-
-    # Top level parm could also contain an expression
-    try:
-        parm_ref.expression()
-    except hou.OperationFailed:
-        # Parm has no expression
-        path_unexpanded = parm_ref.unexpandedString()
-    else:
-        # If parm has an expression, unexpandedString() will raise an exception
-        path_unexpanded = parm_ref.evalAsString()
-
-    # Completely resolve the parm value for path check
-    if unexpanded:
-        return path_unexpanded
-
-    return hou.expandString(path_unexpanded)
-
-
 def _get_evaluated_glob_path(parm, globbed_path: str) -> str:
     """Given a parm that contains a path, temporarily set it to a globbed path
     and perform an evaluation to remove all other variables, return the value
@@ -228,8 +195,8 @@ def _get_scene_asset_references(rop_node: hou.Node) -> AssetReferences:
         # the unexpanded version to evaluate afterwards. Allows us to limit
         # files with parameters, such as $F, to one entry instead of possibly
         # hundreds/thousands
-        path_unexpanded = _get_parm_value_after_reference(parm)
-        path = hou.expandString(path_unexpanded)
+        path_unexpanded = ref
+        path = hou.expandString(ref)
 
         if os.path.isdir(path):
             asset_references.input_directories.add(path_unexpanded)
