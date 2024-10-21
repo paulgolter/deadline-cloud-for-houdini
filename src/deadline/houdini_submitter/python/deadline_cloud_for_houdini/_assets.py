@@ -191,15 +191,17 @@ def _get_scene_asset_references(rop_node: hou.Node) -> AssetReferences:
         ):
             continue
 
-        path = parm.evalAsString()
         # Check the evaluated version to ensure _something_ exists, but add
         # the unexpanded version to evaluate afterwards. Allows us to limit
         # files with parameters, such as $F, to one entry instead of possibly
         # hundreds/thousands
+        path_unexpanded = ref
+        path = hou.expandString(ref)
+
         if os.path.isdir(path):
-            asset_references.input_directories.add(parm.unexpandedString())
+            asset_references.input_directories.add(path_unexpanded)
         if os.path.isfile(path):
-            asset_references.input_filenames.add(parm.unexpandedString())
+            asset_references.input_filenames.add(path_unexpanded)
 
     all_inputs = rop_node.inputAncestors()
     for node in all_inputs:
